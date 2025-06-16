@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>21期 IT資格取得キャンペーン インタラクティブ・ガイド (AI機能搭載)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals (Updated) -->
+    <!-- Application Structure Plan: Retained dashboard structure. Added two Gemini API-powered features: 1. A "Study Plan Generator" button on each qualification card. This opens a modal and generates a learning plan for that specific cert, providing immediate, actionable value. 2. A new "AI Career Advisor" section at the bottom, allowing users to get personalized advice based on their role and interests. This structure integrates AI features logically within the existing user flow (exploring certs) and as a new, distinct value-add section. -->
+    <!-- Visualization & Content Choices: 
+        - Study Plan -> Goal: Provide actionable learning steps -> Viz: Modal Window with Markdown content -> Interaction: Button click on cards -> Justification: Offers deep, contextual information without cluttering the main UI. Gemini generates tailored content on demand. Method: Gemini API call, display with 'marked.js'.
+        - Career Advice -> Goal: Offer personalized career guidance -> Viz: Form with inputs and a display area -> Interaction: User inputs role/certs, clicks button -> Justification: Creates a new interactive module for a different user task (career planning), leveraging Gemini for complex, personalized text generation. Method: Gemini API call.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+            background-color: #F9F9F7;
+            color: #383838;
+        }
+        .smooth-transition {
+            transition: all 0.3s ease-in-out;
+        }
+        .tab-button.active {
+            border-color: #3B82F6;
+            background-color: #3B82F6;
+            color: #FFFFFF;
+        }
+        #ai-modal-content ul { list-style-type: disc; margin-left: 20px; }
+        #ai-modal-content h3 { font-size: 1.25rem; font-weight: bold; margin-top: 1rem; margin-bottom: 0.5rem; }
+        #career-advice-output ul { list-style-type: disc; margin-left: 20px; }
+        #career-advice-output h3 { font-size: 1.25rem; font-weight: bold; margin-top: 1rem; margin-bottom: 0.5rem; }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #3B82F6;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+
+        <header class="text-center mb-12">
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-600 mb-2">21期 資格取得キャンペーン</h1>
+            <p class="text-lg text-gray-600">期間: 2025年9月30日まで</p>
+        </header>
+
+        <main>
+            <section id="overview" class="mb-12">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold mb-2">キャンペーン概要</h2>
+                    <p class="text-gray-600 max-w-3xl mx-auto">クルーの皆さんのスキルアップと更なる活躍を応援するためのキャンペーンです。対象資格に合格すると、受験料の補助に加え、月額での資格手当が支給されます。</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                    <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
+                        <h3 class="text-xl font-semibold mb-2">受験費用を全額補助</h3>
+                        <p class="text-gray-600">対象資格に合格した場合、受験料を全額会社が負担します（立替精算）。</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+                        <h3 class="text-xl font-semibold mb-2">資格手当を月額支給</h3>
+                        <p class="text-gray-600">合格の翌月から1年間、資格に応じた手当を給与に上乗せして支給します。</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
+                        <h3 class="text-xl font-semibold mb-2">スキルアップを応援</h3>
+                        <p class="text-gray-600">継続的な学習を通じて、市場価値の高いスキルを習得できます。</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="qualifications" class="mb-12">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold mb-2">対象資格を探す</h2>
+                    <p class="text-gray-600 max-w-3xl mx-auto">あなたの目指す資格がキャンペーンの対象か、下の検索機能やフィルタを使って確認してみましょう。</p>
+                </div>
+                <div class="bg-white p-6 md:p-8 rounded-lg shadow-lg">
+                    <div class="mb-6">
+                        <input type="text" id="searchInput" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="資格名で検索 (例: AWS, LPIC)">
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="font-semibold text-gray-700 mb-2 block text-center md:text-left">カテゴリ:</label>
+                            <div class="flex flex-wrap justify-center gap-2" id="categoryFilters">
+                                <button class="tab-button active px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-category="all">すべて</button>
+                                <button class="tab-button px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-category="server">Server</button>
+                                <button class="tab-button px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-category="cloud">Cloud</button>
+                                <button class="tab-button px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-category="network">Network</button>
+                                <button class="tab-button px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-category="platform">Platform</button>
+                                <button class="tab-button px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-category="quality">品質管理</button>
+                                <button class="tab-button px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-category="infra">インフラ</button>
+                                <button class="tab-button px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-category="dev">開発/IT</button>
+                                <button class="tab-button px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-category="pc">PCスキル</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="font-semibold text-gray-700 mb-2 block text-center md:text-left">月額手当:</label>
+                            <div class="flex flex-wrap justify-center gap-2" id="allowanceFilters">
+                                 <button class="tab-button active px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-allowance="all">すべて</button>
+                                 <button class="tab-button px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-allowance="8000">¥8,000</button>
+                                 <button class="tab-button px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-allowance="5000">¥5,000</button>
+                                 <button class="tab-button px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-allowance="3000">¥3,000</button>
+                                 <button class="tab-button px-4 py-2 border-2 border-transparent rounded-full smooth-transition" data-allowance="0">手当なし</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="qualificationList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+                    </div>
+                     <p id="noResults" class="text-center text-gray-500 py-8 hidden">該当する資格が見つかりませんでした。</p>
+                </div>
+            </section>
+            
+            <section id="ai-career-advisor" class="mb-12 bg-white p-6 md:p-8 rounded-lg shadow-lg">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold mb-2">✨ AIキャリア相談</h2>
+                    <p class="text-gray-600 max-w-3xl mx-auto">興味のある資格があなたのキャリアにどう活かせるか、AIに相談してみましょう。</p>
+                </div>
+                <div class="max-w-2xl mx-auto">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="current-role" class="block text-sm font-medium text-gray-700">あなたの現在の職種 (例: Webエンジニア, インフラエンジニア)</label>
+                            <input type="text" id="current-role" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="interested-certs" class="block text-sm font-medium text-gray-700">興味のある資格 (複数可、カンマ区切り)</label>
+                            <input type="text" id="interested-certs" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="例: AWS Solutions Architect Associate, CCNP">
+                        </div>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <button id="get-career-advice" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 smooth-transition disabled:bg-gray-400">
+                            AIに相談する
+                        </button>
+                    </div>
+                    <div id="career-advice-output-container" class="mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50 hidden">
+                        <div id="career-advice-spinner" class="flex justify-center items-center py-4">
+                            <div class="spinner"></div>
+                        </div>
+                        <div id="career-advice-output"></div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="text-center pt-8 mt-8 border-t border-gray-200">
+            <p class="text-gray-500">ビジネスソリューション部</p>
+        </footer>
+    </div>
+    
+    <div id="ai-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 id="ai-modal-title" class="text-xl font-bold"></h3>
+                <button id="ai-modal-close" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            <div id="ai-modal-body" class="p-6 overflow-y-auto">
+                <div id="ai-modal-spinner" class="flex justify-center items-center py-8">
+                    <div class="spinner"></div>
+                </div>
+                <div id="ai-modal-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const qualifications = [
+                { name: 'LPIC (レベル1・2)', category: 'server', allowance: 3000, notes: '※1 Level1(101,102), Level2(201,202)の各レベル単位で取得時に月額支給。' },
+                { name: 'LPIC (レベル3)', category: 'server', allowance: 5000, notes: '※2 300,303,304のいずれか1つ取得で月額支給。複数取得でも追加支給なし。' },
+                { name: 'Microsoft Azure Fundamentals (AZ-900, SC-900)', category: 'cloud', allowance: 3000, notes: '' },
+                { name: 'Microsoft Azure Associate (AZ-104, AZ-204, AZ-500等)', category: 'cloud', allowance: 5000, notes: '' },
+                { name: 'Microsoft Azure Expert / Speciality', category: 'cloud', allowance: 8000, notes: '' },
+                { name: 'Microsoft Power Platform (PL-100~600, 900)', category: 'platform', allowance: 3000, notes: '' },
+                { name: 'AWS Cloud Practitioner', category: 'cloud', allowance: 3000, notes: '' },
+                { name: 'AWS Solutions Architect Associate', category: 'cloud', allowance: 5000, notes: '' },
+                { name: 'AWS Solutions Architect Professional / Speciality', category: 'cloud', allowance: 8000, notes: '' },
+                { name: 'CCNA', category: 'network', allowance: 5000, notes: '' },
+                { name: 'CCNP', category: 'network', allowance: 8000, notes: '※3 コア試験 + コンセントレーション試験の両方に合格で支給。' },
+                { name: 'ITIL Foundation V4', category: 'infra', allowance: 3000, notes: '' },
+                { name: 'JCSQEソフトウェア品質技術者資格(初級)', category: 'quality', allowance: 3000, notes: '' },
+                { name: 'JSTQB認定テスト技術者資格 Foundation', category: 'quality', allowance: 5000, notes: '' },
+                { name: 'ORACLE MASTER (Silver以上)', category: 'dev', allowance: 3000, notes: '' },
+                { name: '応用情報技術者', category: 'dev', allowance: 3000, notes: '' },
+                { name: 'Salesforce系資格', category: 'platform', allowance: 3000, notes: '' },
+                { name: 'ITパスポート', category: 'dev', allowance: 0, notes: '※入社から半年以内の方のみ受験料支給対象。月額手当なし。' },
+                { name: 'MOS スペシャリスト (Excel, Access)', category: 'pc', allowance: 0, notes: '※入社から半年以内の方のみ受験料支給対象。月額手当なし。' },
+                { name: 'MOS エキスパート (Excel, Access)', category: 'pc', allowance: 0, notes: '※受験料支給対象。月額手当なし。' }
+            ];
+
+            const qualificationListEl = document.getElementById('qualificationList');
+            const searchInputEl = document.getElementById('searchInput');
+            const categoryFiltersEl = document.getElementById('categoryFilters');
+            const allowanceFiltersEl = document.getElementById('allowanceFilters');
+            const noResultsEl = document.getElementById('noResults');
+
+            let currentCategory = 'all';
+            let currentAllowance = 'all';
+            let currentSearchTerm = '';
+            
+            const allowanceColors = {
+                8000: '#3B82F6',
+                5000: '#60A5FA',
+                3000: '#93C5FD',
+                0: '#9CA3AF'
+            };
+
+            const renderQualifications = () => {
+                qualificationListEl.innerHTML = '';
+                const filteredQualifications = qualifications.filter(q => {
+                    const matchesCategory = currentCategory === 'all' || q.category === currentCategory;
+                    const matchesSearch = q.name.toLowerCase().includes(currentSearchTerm.toLowerCase());
+                    const matchesAllowance = currentAllowance === 'all' || q.allowance == currentAllowance;
+                    return matchesCategory && matchesSearch && matchesAllowance;
+                });
+
+                if (filteredQualifications.length === 0) {
+                    noResultsEl.classList.remove('hidden');
+                } else {
+                    noResultsEl.classList.add('hidden');
+                }
+
+                filteredQualifications.forEach(q => {
+                    const card = document.createElement('div');
+                    const allowanceText = q.allowance > 0 ? `月額 ${q.allowance.toLocaleString('ja-JP')}円` : '手当なし';
+                    card.className = 'bg-gray-50 p-4 rounded-lg border border-gray-200 smooth-transition hover:shadow-md hover:border-blue-500 flex flex-col justify-between';
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <p class="font-semibold text-gray-800 pr-2">${q.name}</p>
+                                <span class="text-sm font-bold text-white rounded-full px-3 py-1 text-right whitespace-nowrap" style="background-color: ${allowanceColors[q.allowance]};">${allowanceText}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">${q.notes || ' '}</p>
+                        </div>
+                        <div class="mt-4 text-right">
+                             <button class="generate-plan-btn text-sm bg-blue-100 text-blue-700 font-semibold py-1 px-3 rounded-full hover:bg-blue-200 smooth-transition" data-qualification-name="${q.name}">✨ 学習プランを生成</button>
+                        </div>
+                    `;
+                    qualificationListEl.appendChild(card);
+                });
+            };
+
+            searchInputEl.addEventListener('input', (e) => {
+                currentSearchTerm = e.target.value;
+                renderQualifications();
+            });
+
+            categoryFiltersEl.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    categoryFiltersEl.querySelector('.active').classList.remove('active');
+                    e.target.classList.add('active');
+                    currentCategory = e.target.dataset.category;
+                    renderQualifications();
+                }
+            });
+
+            allowanceFiltersEl.addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    allowanceFiltersEl.querySelector('.active').classList.remove('active');
+                    e.target.classList.add('active');
+                    currentAllowance = e.target.dataset.allowance;
+                    renderQualifications();
+                }
+            });
+            
+            renderQualifications();
+
+            const aiModal = document.getElementById('ai-modal');
+            const aiModalClose = document.getElementById('ai-modal-close');
+            const aiModalTitle = document.getElementById('ai-modal-title');
+            const aiModalContent = document.getElementById('ai-modal-content');
+            const aiModalSpinner = document.getElementById('ai-modal-spinner');
+
+            const openModal = () => aiModal.classList.remove('hidden');
+            const closeModal = () => aiModal.classList.add('hidden');
+
+            aiModalClose.addEventListener('click', closeModal);
+            aiModal.addEventListener('click', (e) => {
+                if (e.target === aiModal) {
+                    closeModal();
+                }
+            });
+
+            qualificationListEl.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('generate-plan-btn')) {
+                    const qualificationName = e.target.dataset.qualificationName;
+                    aiModalTitle.textContent = `${qualificationName} - 学習プラン`;
+                    aiModalContent.innerHTML = '';
+                    aiModalSpinner.style.display = 'flex';
+                    openModal();
+                    
+                    const prompt = `あなたはIT教育の専門家です。「${qualificationName}」という資格を取得するための、初心者向けの学習プランを提案してください。以下の要素を含めて、日本語で分かりやすくマークダウン形式で記述してください。\n\n- **推奨学習期間**: (例: 1ヶ月〜3ヶ月)\n- **主要な学習トピック**: 重要な分野を箇条書きで3〜5つ挙げてください。\n- **おすすめの学習ステップ**: 具体的な学習の進め方を段階的に説明してください。\n- **TIPS**: 学習を続けるためのコツや注意点を教えてください。`;
+                    
+                    const generatedText = await callGemini(prompt);
+                    aiModalContent.innerHTML = marked.parse(generatedText);
+                    aiModalSpinner.style.display = 'none';
+                }
+            });
+            
+            const getCareerAdviceBtn = document.getElementById('get-career-advice');
+            const careerAdviceOutputContainer = document.getElementById('career-advice-output-container');
+            const careerAdviceSpinner = document.getElementById('career-advice-spinner');
+            const careerAdviceOutput = document.getElementById('career-advice-output');
+            
+            getCareerAdviceBtn.addEventListener('click', async () => {
+                const role = document.getElementById('current-role').value;
+                const certs = document.getElementById('interested-certs').value;
+                
+                if (!role || !certs) {
+                    alert('職種と興味のある資格の両方を入力してください。');
+                    return;
+                }
+                
+                careerAdviceOutputContainer.classList.remove('hidden');
+                careerAdviceOutput.innerHTML = '';
+                careerAdviceSpinner.style.display = 'flex';
+                getCareerAdviceBtn.disabled = true;
+                
+                const prompt = `あなたは経験豊富なITキャリアコンサルタントです。現在の職種が「${role}」の人物が、「${certs}」という資格を取得することに関心を持っています。この資格取得がキャリアにどのような良い影響を与えるか、具体的なメリットや将来のキャリアパスについて、日本語で分かりやすくマークダウン形式でアドバイスしてください。\n\n- **スキルの相乗効果**: \n- **期待できるキャリアパス**: \n- **市場価値の向上**:`;
+
+                const generatedText = await callGemini(prompt);
+                careerAdviceOutput.innerHTML = marked.parse(generatedText);
+                careerAdviceSpinner.style.display = 'none';
+                getCareerAdviceBtn.disabled = false;
+            });
+
+            async function callGemini(prompt) {
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!response.ok) {
+                        return `エラーが発生しました: ${response.statusText}`;
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        return result.candidates[0].content.parts[0].text;
+                    } else {
+                        return 'AIからの有効な応答がありませんでした。';
+                    }
+                } catch (error) {
+                    console.error("Gemini API call failed:", error);
+                    return 'AIの呼び出し中にエラーが発生しました。しばらくしてからもう一度お試しください。';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
