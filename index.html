@@ -8,10 +8,10 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Warm Neutrals (Updated) -->
-    <!-- Application Structure Plan: Retained dashboard structure. Added two Gemini API-powered features: 1. A "Study Plan Generator" button on each qualification card. This opens a modal and generates a learning plan for that specific cert, providing immediate, actionable value. 2. A new "AI Career Advisor" section at the bottom, allowing users to get personalized advice based on their role and interests. This structure integrates AI features logically within the existing user flow (exploring certs) and as a new, distinct value-add section. -->
+    <!-- Application Structure Plan: Added a dedicated, highly visible section for API key input. This is critical for local execution. The AI functions now check if the key exists before running, providing a better user experience by guiding the user to enter the key if it's missing. The core app structure remains the same. -->
     <!-- Visualization & Content Choices: 
-        - Study Plan -> Goal: Provide actionable learning steps -> Viz: Modal Window with Markdown content -> Interaction: Button click on cards -> Justification: Offers deep, contextual information without cluttering the main UI. Gemini generates tailored content on demand. Method: Gemini API call, display with 'marked.js'.
-        - Career Advice -> Goal: Offer personalized career guidance -> Viz: Form with inputs and a display area -> Interaction: User inputs role/certs, clicks button -> Justification: Creates a new interactive module for a different user task (career planning), leveraging Gemini for complex, personalized text generation. Method: Gemini API call.
+        - API Key Input -> Goal: Enable local execution of AI features -> Viz: A prominent input form -> Interaction: User pastes key, it's stored in a JS variable -> Justification: Solves the core problem of API authentication on a local server. This is a necessary utility, not a data visualization. Method: HTML/JS.
+        - Study Plan & Career Advice -> Unchanged, but now rely on the user-provided API key.
     -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
@@ -44,11 +44,34 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .api-key-section.highlight {
+            animation: highlight-anim 1.5s ease;
+        }
+        @keyframes highlight-anim {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
     </style>
 </head>
 <body class="antialiased">
 
     <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+
+        <section id="api-key-section" class="api-key-section mb-8 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-lg shadow-md">
+            <h2 class="text-xl font-bold mb-2">AI機能を使うには</h2>
+            <p class="mb-3">AI機能（学習プラン生成・キャリア相談）を利用するには、ご自身のGemini APIキーが必要です。以下の手順でキーを取得し、入力してください。</p>
+            <ol class="list-decimal list-inside mb-4 text-sm">
+                <li><a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline hover:text-yellow-900 font-semibold">Google AI Studio</a> にアクセスし、Googleアカウントでログインします。</li>
+                <li>「Create API key」ボタンをクリックして新しいキーを生成します。</li>
+                <li>生成されたキーをコピーし、下の欄に貼り付けて「キーを保存」ボタンを押してください。</li>
+            </ol>
+            <div class="flex items-center gap-2">
+                <input type="password" id="api-key-input" class="w-full p-2 border border-yellow-400 rounded-md shadow-sm text-black" placeholder="ここにAPIキーを貼り付けます">
+                <button id="save-api-key" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-600 smooth-transition">キーを保存</button>
+            </div>
+            <p id="api-key-status" class="text-sm mt-2 font-semibold"></p>
+        </section>
 
         <header class="text-center mb-12">
             <h1 class="text-3xl md:text-4xl font-bold text-blue-600 mb-2">21期 資格取得キャンペーン</h1>
@@ -172,6 +195,24 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            let userApiKey = '';
+
+            const apiKeyInput = document.getElementById('api-key-input');
+            const saveApiKeyBtn = document.getElementById('save-api-key');
+            const apiKeyStatus = document.getElementById('api-key-status');
+            const apiKeySection = document.getElementById('api-key-section');
+
+            saveApiKeyBtn.addEventListener('click', () => {
+                userApiKey = apiKeyInput.value.trim();
+                if (userApiKey) {
+                    apiKeyStatus.textContent = 'APIキーが保存されました。AI機能が利用可能です。';
+                    apiKeyStatus.className = 'text-sm mt-2 font-semibold text-green-700';
+                } else {
+                    apiKeyStatus.textContent = 'APIキーが空です。';
+                    apiKeyStatus.className = 'text-sm mt-2 font-semibold text-red-700';
+                }
+            });
+
             const qualifications = [
                 { name: 'LPIC (レベル1・2)', category: 'server', allowance: 3000, notes: '※1 Level1(101,102), Level2(201,202)の各レベル単位で取得時に月額支給。' },
                 { name: 'LPIC (レベル3)', category: 'server', allowance: 5000, notes: '※2 300,303,304のいずれか1つ取得で月額支給。複数取得でも追加支給なし。' },
@@ -288,8 +329,20 @@
                 }
             });
 
+            function checkApiKey() {
+                if (!userApiKey) {
+                    alert('先にAPIキーを入力して「キーを保存」ボタンを押してください。');
+                    apiKeySection.classList.add('highlight');
+                    setTimeout(() => apiKeySection.classList.remove('highlight'), 1500);
+                    return false;
+                }
+                return true;
+            }
+
             qualificationListEl.addEventListener('click', async (e) => {
                 if (e.target.classList.contains('generate-plan-btn')) {
+                    if (!checkApiKey()) return;
+                    
                     const qualificationName = e.target.dataset.qualificationName;
                     aiModalTitle.textContent = `${qualificationName} - 学習プラン`;
                     aiModalContent.innerHTML = '';
@@ -310,6 +363,8 @@
             const careerAdviceOutput = document.getElementById('career-advice-output');
             
             getCareerAdviceBtn.addEventListener('click', async () => {
+                if (!checkApiKey()) return;
+                
                 const role = document.getElementById('current-role').value;
                 const certs = document.getElementById('interested-certs').value;
                 
@@ -334,7 +389,7 @@
             async function callGemini(prompt) {
                 let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
                 const payload = { contents: chatHistory };
-                const apiKey = "";
+                const apiKey = userApiKey; // Use the user-provided key
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 try {
@@ -345,7 +400,9 @@
                     });
                     
                     if (!response.ok) {
-                        return `エラーが発生しました: ${response.statusText}`;
+                        const errorData = await response.json();
+                        console.error("API Error:", errorData);
+                        return `エラーが発生しました: ${errorData.error.message}`;
                     }
 
                     const result = await response.json();
@@ -359,11 +416,37 @@
                     }
                 } catch (error) {
                     console.error("Gemini API call failed:", error);
-                    return 'AIの呼び出し中にエラーが発生しました。しばらくしてからもう一度お試しください。';
+                    return 'AIの呼び出し中にエラーが発生しました。ネットワーク接続を確認するか、しばらくしてからもう一度お試しください。';
                 }
             }
         });
     </script>
 </body>
 </html>
+```
 
+---
+
+#### 【ステップ2】 ご自身のAPIキーを取得する
+
+1.  **Google AI Studioにアクセス:**
+    * こちらのリンクをクリックしてください: [**Google AI Studio APIキー取得ページ**](https://aistudio.google.com/app/apikey)
+    * Googleアカウントでのログインを求められたら、ログインします。
+
+2.  **APIキーを作成:**
+    * 「**Create API key in new project**」というボタンが表示されるので、クリックします。
+    * すぐに `AIza...` から始まる長い文字列（これがAPIキーです）が生成されます。右側にあるコピーアイコンをクリックして、キーをコピーします。
+
+---
+
+#### 【ステップ3】 アプリケーションを実行し、キーを設定する
+
+1.  【ステップ1】で保存した`guide.html`を、前回同様 **Visual Studio Codeの「Go Live」機能で開きます。**
+2.  ブラウザでページが開くと、一番上に黄色い「AI機能を使うには」というセクションが表示されます。
+3.  【ステップ2】でコピーしたご自身のAPIキーを、入力欄に貼り付けます。
+4.  「**キーを保存**」ボタンをクリックします。
+5.  「APIキーが保存されました。」というメッセージが表示されれば準備完了です。
+
+これで、「学習プランを生成」や「AIに相談する」ボタンを押すと、ご自身のAPIキーを使って通信が行われ、AI機能が正常に動作するはずです。
+
+お手数をおかけしますが、こちらの方法で再度お試しいただけますでしょ
