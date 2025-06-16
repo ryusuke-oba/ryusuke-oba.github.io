@@ -7,13 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Warm Neutrals (Updated) -->
-    <!-- Application Structure Plan: The core structure is unchanged. The key improvement is in user experience by persisting the API key. Logic has been added to use the browser's localStorage to save and retrieve the key, eliminating the need for repeated entry. -->
-    <!-- Visualization & Content Choices: 
-        - API Key Input -> Goal: Enable persistent local execution -> Viz: Input form with Save/Clear buttons -> Interaction: User saves key to localStorage; on page load, key is retrieved from localStorage -> Justification: Significantly improves usability by removing a major friction point (re-entering the key). This is a critical UX enhancement. Method: HTML/JS with localStorage.
-        - Study Plan & Career Advice -> Unchanged, but now leverage the persistently stored API key.
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
             font-family: 'Noto Sans JP', 'Inter', sans-serif;
@@ -139,6 +132,10 @@
                     <div id="qualificationList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
                     </div>
                      <p id="noResults" class="text-center text-gray-500 py-8 hidden">該当する資格が見つかりませんでした。</p>
+                    <div class="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-600 space-y-2">
+                        <p>※記載資格以外でも取得検討しているものがあれば、ラウンダーに事前相談ください。場合によっては合格時の受験費用支給ができる可能性があります。</p>
+                        <p>※詳細な申請手順は、<a href="https://drive.google.com/file/d/1Nj265xhpMzJR2FMGxz9m1TdtQjkThh3t/view?usp=drive_link" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline hover:text-blue-800">こちらの申請マニュアル</a>をご確認ください。</p>
+                    </div>
                 </div>
             </section>
             
@@ -236,8 +233,8 @@
             });
 
             const qualifications = [
-                { name: 'LPIC (レベル1・2)', category: 'server', allowance: 3000, notes: '※1 Level1(101,102), Level2(201,202)の各レベル単位で取得時に月額支給。' },
-                { name: 'LPIC (レベル3)', category: 'server', allowance: 5000, notes: '※2 300,303,304のいずれか1つ取得で月額支給。複数取得でも追加支給なし。' },
+                { name: 'LPIC (レベル1・2)', category: 'server', allowance: 3000, notes: '※1 101、102、201、202は取得につき受検費用は支給。ただし月額支給は、Level1の場合は101かつ102の取得、Level2の場合は201かつ202の取得で支給とする。同期間にLevel1とLevel2を取得した場合は、別々で月額支給をする。' },
+                { name: 'LPIC (レベル3)', category: 'server', allowance: 5000, notes: '※2 Level3は300、303、304のいずれかを取得で月額支給。2個以上取得の場合は受検費用は支給するが、追加で月額支給無し。' },
                 { name: 'Microsoft Azure Fundamentals (AZ-900, SC-900)', category: 'cloud', allowance: 3000, notes: '' },
                 { name: 'Microsoft Azure Associate (AZ-104, AZ-204, AZ-500等)', category: 'cloud', allowance: 5000, notes: '' },
                 { name: 'Microsoft Azure Expert / Speciality', category: 'cloud', allowance: 8000, notes: '' },
@@ -246,7 +243,7 @@
                 { name: 'AWS Solutions Architect Associate', category: 'cloud', allowance: 5000, notes: '' },
                 { name: 'AWS Solutions Architect Professional / Speciality', category: 'cloud', allowance: 8000, notes: '' },
                 { name: 'CCNA', category: 'network', allowance: 5000, notes: '' },
-                { name: 'CCNP', category: 'network', allowance: 8000, notes: '※3 コア試験 + コンセントレーション試験の両方に合格で支給。' },
+                { name: 'CCNP', category: 'network', allowance: 8000, notes: '※3 月額支給は、コア試験 かつ コンセントレーション試験に合格した場合のみ支給。' },
                 { name: 'ITIL Foundation V4', category: 'infra', allowance: 3000, notes: '' },
                 { name: 'JCSQEソフトウェア品質技術者資格(初級)', category: 'quality', allowance: 3000, notes: '' },
                 { name: 'JSTQB認定テスト技術者資格 Foundation', category: 'quality', allowance: 5000, notes: '' },
